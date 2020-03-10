@@ -3,6 +3,8 @@ library(mclust)
 library(data.table)
 library(MASS)
 
+#setwd('/Users/universe/Downloads/ctcf_auxin/cluster3/LMqPCRnorm_folder_Mclust/')
+
 ### get parameters
 args = commandArgs(trailingOnly=TRUE)
 
