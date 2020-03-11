@@ -27,6 +27,7 @@ a1 = 0 ### d20A unmatched
 a2 = 0 ### d10A only uniq
 a3 = 0 ### d10A all 
 set.seed(2020)
+set.seed(20)
 for (i in 1:length(d20A)){
 if (i%%1000==0){
 	print(i)
