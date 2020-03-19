@@ -113,6 +113,9 @@ write.table(d10A_nomatch_pk, paste(new_folder, output_name, '.unstable.unmatch.t
 used_id = sample(dim(d10A_nomatch_pk)[1], dim(d20A_matched_stable_pk)[1])
 write.table(d10A_nomatch_pk[used_id,], paste(new_folder, output_name, '.unstable.unmatch.match_pknum.txt', sep=''), quote=F, col.names=T, row.names=F, sep='\t')
 
+write.table(d1[d10A>=Amean_lim,], paste(new_folder, output_name, '.unstable.highsig.txt', sep=''), quote=F, col.names=T, row.names=F, sep='\t')
+write.table(d1[d10A<Amean_lim,], paste(new_folder, output_name, '.unstable.lowsig.txt', sep=''), quote=F, col.names=T, row.names=F, sep='\t')
+
 
 #balanced_peaklist_for_compare.stable.submatch.txt
 #balanced_peaklist_for_compare.unstable.submatch.txt
