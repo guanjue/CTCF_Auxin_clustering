@@ -37,20 +37,15 @@ time Rscript get_cluster_Decay_curve.R
 ### Step9 get same 0A peak sets (stable vs unstable)
 time Rscript get_0A_same_sus.pk.R
 
-### Step10 get IS
-time bash get_IS_matrix.sh
-
-### Step11 FIMO
+### Step10 FIMO
 time bash get_fimo_analysis.sh
 
-### Step12 PhastCons
-time bash get_plastcons30way.eachpk.sh
-
-### Step13 Mclust for validation
+### Step11 Mclust for validation
 time Rscript get_cluster_Mclust.R
 
-### target regions
-chr14:69,620,667-70,484,256
+### Step12 plot exponential signal trend matching initial signal
+time Rscript intensity_matching_JL_final.R
+time Rscript intensity_matching_decay_JL_final.R
 
 
 
