@@ -5,8 +5,8 @@ colMedian = function(x){
 	return(apply(x, 2, median))
 }
 
-unstable_name = '/Users/universe/Downloads/ctcf_auxin/cluster3/LMqPCRnorm_folder_Mclust/raw_mclust.5.pk.clean.txt'
-stable_name = '/Users/universe/Downloads/ctcf_auxin/cluster3/LMqPCRnorm_folder_Mclust/raw_mclust.6.pk.clean.txt'
+unstable_name = '/Users/universe/Downloads/ctcf_auxin/cluster3/LMqPCRnorm_folder_Mclust6/raw_mclust.5.pk.clean.txt'
+stable_name = '/Users/universe/Downloads/ctcf_auxin/cluster3/LMqPCRnorm_folder_Mclust6/raw_mclust.6.pk.clean.txt'
 
 d1 = read.table(unstable_name, header=T)
 d2 = read.table(stable_name, header=T)
@@ -28,12 +28,13 @@ a2 = 0 ### d10A only uniq
 a3 = 0 ### d10A all 
 set.seed(2020)
 set.seed(20)
+
 for (i in 1:length(d20A)){
 if (i%%1000==0){
 	print(i)
 }
 d20A_tmp = d20A[i]
-dif_value = 1
+dif_value = 0.01
 
 used_id_binary = (d10A>(d20A_tmp-dif_value)) & (d10A<(d20A_tmp+dif_value))
 if (sum(used_id_binary)==0){
@@ -51,8 +52,11 @@ used_id_pos <- used_id_pos_od[!used_id_pos_od %in% d10A_matched_stable_pk_id]
 if (length(used_id_pos)==0){
 used_id_pos=used_id_pos_od
 }
+#print(length(used_id_pos))
 used_id_pos_s1 = sample(length(used_id_pos), 1)
+#print(used_id_pos_s1)
 used_id_pos1 = used_id_pos[used_id_pos_s1]
+print(used_id_pos1)
 ### add id
 a2 = a2+1
 d10A_matched_stable_pk_id[a2] = used_id_pos1

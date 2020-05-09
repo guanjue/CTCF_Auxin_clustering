@@ -49,7 +49,7 @@ print(summary(a$coefficients))
 return(c(a$coefficients[1], a$coefficients[2], mean(a$residuals)))
 }
 
-get_decay_curve = function(y,x){
+get_decay_curve = function(y,x, x0){
 A = (y[1]+y[2])/2
 y_sub = y - A
 a = lm(y_sub~x-1)
@@ -58,6 +58,23 @@ a = lm(y_sub~x-1)
 return(c(A, a$coefficients[1], summary(a)$r.squared))
 }
 
+ED_func = function(data, par) {
+with(data, sum(( log(RC0+1)+(par[1]*t) - log(RC+1) )^2))
+}
+
+get_decay_curve_LS = function(y, x, x0){
+RC = y
+t = x
+RC0 = as.numeric(RC[1]/2+RC[2]/2)
+dat = as.data.frame(cbind(as.numeric(t), as.numeric(RC), as.numeric(rep(RC0, length(t))) ))
+colnames(dat) = c('t', 'RC', 'RC0')
+result = optim(par = c(-1.0), fn = ED_func, data = dat, method='BFGS')
+#print(summary(a))
+#print(summary(a$coefficients))
+return(c(RC0, result$par))
+}
+
+
 get_linear_curve = function(y,x){
 a = lm(y~x)
 #print(summary(a))
@@ -65,24 +82,122 @@ a = lm(y~x)
 return(summary(a)$r.squared)
 }
 
+EDR_formula = function(D, R, RC0, t){
+	RCt = (D+R)*RC0/D*exp(t*D)-R*RC0/D
+	return(RCt)
+}
 
-def LS_ED = function(RC, t, A0, SR0, RC0, converge){
 
-RC = d1_0_OD_sig[6,]
-dat = as.data.frame(cbind(as.numeric(t), as.numeric(RC)+1, as.numeric(rep(RC[1]/2+RC[2]/2, length(t)))+1 ))
-colnames(dat) = c('t', 'RC', 'RC0')
-result = optim(par = c(-1, 0.1), fn = EDR, data = dat, method='BFGS')
+EDR = function(data, par) {
+#with(data, sum((RC0/(par[1]-par[2])*(par[1]*exp((par[1]-par[2])*t)-par[2]) - RC)^2))
+#with(data, sum(( par[1]*RC0/(par[1]-par[2])*exp(t*(par[1]-par[2]))-par[2]*RC0/(par[1]-par[2]) - RC )^2))
+#with(data, sum(( (par[1]+par[2])*RC0/par[1]*exp(t*par[1])-par[2]*RC0/par[1] - RC )^2))
+with(data, sum(( log((D+par[1])*RC0/D*exp(t*D)-par[1]*RC0/D) - log(RC) )^2))
+}
 
+
+get_EDR_fit = function(t, RC){
+RC0 = as.numeric((RC[1]/2+RC[2]/2))
+y_sub = log(RC) - log(RC0)
+lmmodel = lm(y_sub[1:4]~t[1:4]-1)
+D = lmmodel$coefficients[1]
+#print(D)
+#print(RC)
+dat = as.data.frame(cbind(as.numeric(t), as.numeric(RC), as.numeric(rep(RC0, length(t))), as.numeric(rep(D, length(t))) ))
+colnames(dat) = c('t', 'RC', 'RC0', 'D')
+#print(D)
+result = optim(par = c(0.1), fn = EDR, data = dat, method='BFGS')
+#print(result$par)
+return(c(D, result$par, RC0))
 }
 
 ### get decay curve coefficients
 d1_0_OD_sig = d1_0_OD0[,-c(1:4)]
 #d1_0_OD_sig = t(apply(d1_0_OD_sig, 1, function(x) (x+1)/(x[1]+x[2]+1)*50*2))
-d1_0_OD_sig_decay0 = t(apply(as.matrix((d1_0_OD_sig)), 1, function(x) get_decay_curve(((log(x+1))), tp)))
+d1_0_OD_sig_decay0 = t(apply(as.matrix((d1_0_OD_sig)), 1, function(x) get_decay_curve(((log(x+1))), tp, log((x[1]+x[2])/2+1)) ))
 d1_0_OD_sig_decay = d1_0_OD_sig_decay0[,1:2]
 d1_0_OD_sig_decay_residual = d1_0_OD_sig_decay0[,3]
 
+
+d1_0_OD_sig_decay0_LS = t(apply(as.matrix((d1_0_OD_sig)), 1, function(x) get_decay_curve_LS(x, tp, log((x[1]+x[2])/2+1)) ))
+
+
 d1_0_OD_sig_linear_residual = t(apply(as.matrix((d1_0_OD_sig)), 1, function(x) get_linear_curve(x, tp)))
+
+d1_0_OD_sig_decay_recover0_fit1 = t(apply(as.matrix((d1_0_OD_sig[(d1_0_OD_sig[,1]+d1_0_OD_sig[,2])!=0,])), 1, function(x) get_EDR_fit(tp, x+1) ))
+
+
+
+pdf('test.EDR.p1p2.pdf', height=12)
+par(mfrow=c(3,1))
+p1 = d1_0_OD_sig_decay_recover0_fit1[,1]
+p2 = d1_0_OD_sig_decay_recover0_fit1[,2]
+p3 = d1_0_OD_sig_decay_recover0_fit1[,3]
+#heatscatter(log10(-p1+max(p1)+0.01),log10(p3-min(p3)+0.01), log='')
+#heatscatter((d1_0_OD_sig_decay0[,1]),(d1_0_OD_sig_decay0[,2]), log='')
+#heatscatter((d1_0_OD_sig_decay0[,1]),log(p3-min(p3)+1), log='')
+heatscatter(log(p3+1), p1, log='')
+heatscatter(log(p3+1), p2, log='')
+heatscatter(p1, p2, log='')
+#heatscatter(log(p2-min(p2)+1), p1+p3-min(p1+p3), log='y')
+dev.off()
+
+
+get_EDR_r2 = function(xvec, D, R, RC0, tp){
+xobs = log(xvec+1)
+xpred = log(EDR_formula(D,R,RC0,tp)+1)
+r2 = 1-(sum((xobs-xpred)^2)/sum((xobs-mean(xobs))^2))
+return(r2)
+}
+
+
+d1_0_OD_sig_EDR_residual_od = apply(cbind(d1_0_OD_sig_decay_recover0_fit1, d1_0_OD_sig), 1, function(x) get_EDR_r2(x[4:length(x)],x[1],x[2],x[3],tp) )
+
+
+
+d1_0_OD_sig_EDR_residual[d1_0_OD_sig_EDR_residual<0]=0
+
+rbPal <- colorRampPalette(c('black','red'))
+Col_all <- rbPal(101)[as.numeric(cut(d1_0_OD_sig_EDR_residual,breaks = 100))]
+pdf(paste(new_folder, 'A_vs_B.EDR.iter.r2.pdf', sep=''), width=5, height=5)
+plot(log(d1_0_OD_sig_decay0_LS[,1]+1),d1_0_OD_sig_decay0_LS[,2], xlab='0A mean signal (log)', ylab='-DR standard deviation', col=Col_all, pch=20)
+dev.off()
+
+
+pdf(paste(new_folder, 'check.pdf', sep=''), width=5, height=5)
+plot(tp,d1_0_OD_sig[6,], xlab='0A mean signal (log)', ylab='-DR standard deviation', pch=20, log='')
+lines(tp, EDR_formula(d1_0_OD_sig_decay_recover0_fit1[6,1],d1_0_OD_sig_decay_recover0_fit1[6,2],d1_0_OD_sig_decay_recover0_fit1[6,3],tp), col='orange' )
+lines(tp, exp(d1_0_OD_sig_decay[6,1])*exp(d1_0_OD_sig_decay[6,2]*tp), col='red' )
+#lines(tp, EDR_formula(result$par[1],result$par[2],d1_0_OD_sig_decay_recover0_fit1[6,3],tp) , col='red')
+#lines(tp, EDR_formula(result1$par[1],result1$par[2],d1_0_OD_sig_decay_recover0_fit1[6,3],tp) , col='green')
+dev.off()
+
+
+
+
+
+
+
+
+
+get_ED_r2 = function(xvec, RC0, D, tp){
+r2 = 1-(sum((xvec-RC0*exp(D*tp))^2)/sum((xvec-mean(xvec))^2))
+return(r2)
+}
+
+d1_0_OD_sig_ED_residual_od = apply(cbind(d1_0_OD_sig_decay, d1_0_OD_sig), 1, function(x) get_ED_r2(x[3:length(x)],x[1],x[2],tp) )
+
+d1_0_OD_sig_ED_residual = d1_0_OD_sig_ED_residual_od
+d1_0_OD_sig_ED_residual[d1_0_OD_sig_ED_residual_od<0]=0
+
+rbPal <- colorRampPalette(c('black','red'))
+Col_all <- rbPal(101)[as.numeric(cut(d1_0_OD_sig_EDR_residual,breaks = 100))]
+pdf(paste(new_folder, 'A_vs_B.ED.iter.r2.pdf', sep=''), width=5, height=5)
+plot(d1_0_OD_sig_decay[,1],d1_0_OD_sig_decay[,2], xlab='0A mean signal (log)', ylab='-DR standard deviation', col=Col_all, pch=20)
+dev.off()
+
+
+
 
 ### get mean vs var
 seq_mean_var = seq(0,max(d1_0_OD_sig_decay[,1]), length.out=1000)

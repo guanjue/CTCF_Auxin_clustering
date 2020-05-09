@@ -3,7 +3,7 @@ library(mclust)
 library(data.table)
 library(MASS)
 
-#setwd('/Users/universe/Downloads/ctcf_auxin/cluster3/LMqPCRnorm_folder_Mclust/')
+#setwd('/Users/universe/Downloads/ctcf_auxin/cluster3/LMqPCRnorm_folder_Mclust6/')
 
 ### get parameters
 args = commandArgs(trailingOnly=TRUE)
@@ -20,7 +20,7 @@ plot_lim = as.numeric(args[4])
 
 signal_mat_file = 'ctcf.qPCR.randbg.blackrm.idsort.sigmat.bgsub.LMqPCRnorm.txt'
 et_mat_file = 'ctcf.qPCR.randbg.blackrm.idsort.sigmat.bgsub.LMqPCRnorm.Ward.txt'
-new_folder='LMqPCRnorm_folder_Mclust'
+new_folder='LMqPCRnorm_folder_Mclust6'
 plot_lim = 50
 
 used_replicates = c(1:4, 5,6, 8,9, 10,11, 12,13, 15,17, 18,20)

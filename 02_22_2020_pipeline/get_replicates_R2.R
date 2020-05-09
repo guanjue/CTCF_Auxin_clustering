@@ -65,4 +65,31 @@ rownames(r2_mat) = c('0A', '4A', '6A', '12A', '18A', '24A')
 
 write.table(r2_mat, 'between_replicates_R2.txt', quote=F, sep='\t', col.names=T, row.names=T)
 
+library(ggplot2)
+library(RColorBrewer)
+
+
+x_2c = c()
+for (i in c(1,3,2)){
+x1 = as.data.frame(rep(colnames(r2_mat)[i], dim(r2_mat)[1]))
+x2 = r2_mat[,i]
+x12 = cbind(x1,x2)
+colnames(x12) = c('Method','R2')
+x_2c = rbind(x_2c, x12)
+}
+
+### all R2
+pdf('R2_boxplot.pdf', width=5, height=4)
+x_2c$R2 = as.numeric(x_2c$R2)
+x_2c$Method = factor(x_2c$Method, levels = unique(x_2c$Method),ordered = TRUE)
+p = ggplot(data = x_2c, aes(x=Method, y=(R2)))
+p = p + geom_boxplot(aes(fill = Method))
+p = p + geom_point(aes(y=(R2), group=Method), position = position_dodge(width=0.1))
+p = p + scale_fill_manual(values=rep(c('gray', 'orange1', 'dodgerblue1', 'dodgerblue'),each = 1))
+#p = p + scale_fill_brewer(palette="YlGnBu", direction=-1)
+#p = p + theme(panel.background = element_blank(), panel.border = element_rect(colour = "black", fill=NA, size=1.5))
+#p = p + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size = 10))
+p = p + ylim(0, 1)
+plot(p)
+dev.off()
 

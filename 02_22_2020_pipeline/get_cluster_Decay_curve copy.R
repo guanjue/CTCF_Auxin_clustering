@@ -21,7 +21,7 @@ plot_lim = as.numeric(args[4])
 signal_mat_file = 'ctcf.qPCR.randbg.blackrm.idsort.sigmat.bgsub.LMqPCRnorm.txt'
 new_folder='/storage/home/gzx103/scratch/ctcf_auxin/all_pk/LMqPCRnorm_decay_folder/'
 output_name = 'stable_peaks.txt'
-pnew = 0.05#1e-4
+pnew = 1e-4
 used_replicates = c(1:4, 5,6, 8,9, 10,11, 12,13, 15,17, 18,20)
 tp = c(0,0,4,4,6,6,12,12,18,18,24,24)
 
@@ -66,14 +66,6 @@ return(summary(a)$r.squared)
 }
 
 
-def LS_ED = function(RC, t, A0, SR0, RC0, converge){
-
-RC = d1_0_OD_sig[6,]
-dat = as.data.frame(cbind(as.numeric(t), as.numeric(RC)+1, as.numeric(rep(RC[1]/2+RC[2]/2, length(t)))+1 ))
-colnames(dat) = c('t', 'RC', 'RC0')
-result = optim(par = c(-1, 0.1), fn = EDR, data = dat, method='BFGS')
-
-}
 
 ### get decay curve coefficients
 d1_0_OD_sig = d1_0_OD0[,-c(1:4)]
@@ -81,6 +73,15 @@ d1_0_OD_sig = d1_0_OD0[,-c(1:4)]
 d1_0_OD_sig_decay0 = t(apply(as.matrix((d1_0_OD_sig)), 1, function(x) get_decay_curve(((log(x+1))), tp)))
 d1_0_OD_sig_decay = d1_0_OD_sig_decay0[,1:2]
 d1_0_OD_sig_decay_residual = d1_0_OD_sig_decay0[,3]
+
+d1_0_OD_sig_decay_t4 = log(rowMeans(d1_0_OD_sig[,3:4])+1)
+
+set.seed(2019)
+used_id = sample(dim(d1_0_OD_sig_decay)[1], 10000)
+pdf('test.pdf')
+heatscatter(d1_0_OD_sig_decay[used_id,1]-d1_0_OD_sig_decay_t4[used_id], d1_0_OD_sig_decay[used_id,2])
+dev.off()
+
 
 d1_0_OD_sig_linear_residual = t(apply(as.matrix((d1_0_OD_sig)), 1, function(x) get_linear_curve(x, tp)))
 

@@ -19,11 +19,16 @@ plot_lim = as.numeric(args[4])
 #plot_lim = 80
 
 signal_mat_file = 'ctcf.qPCR.randbg.blackrm.idsort.sigmat.bgsub.LMqPCRnorm.txt'
-new_folder='/storage/home/gzx103/scratch/ctcf_auxin/all_pk/LMqPCRnorm_decay_folder/'
+stable_mat_binary_file = 'stable.mat.txt'
+unstable_mat_binary_file = 'unstable.mat.txt'
+
+new_folder='/Users/universe/Downloads/compare_two_methods/'
 output_name = 'stable_peaks.txt'
-pnew = 0.05#1e-4
+pnew = 1e-4
 used_replicates = c(1:4, 5,6, 8,9, 10,11, 12,13, 15,17, 18,20)
 tp = c(0,0,4,4,6,6,12,12,18,18,24,24)
+
+
 
 ### function
 colMedian = function(x){
@@ -33,6 +38,12 @@ colMedian = function(x){
 ### get input mat
 chipseq_sig_mat = as.data.frame(fread(signal_mat_file))
 chipseq_sig_mat = chipseq_sig_mat[,used_replicates]
+chipseq_sig_mat = chipseq_sig_mat[order(chipseq_sig_mat[,4]),]
+
+stable_mat_binary = as.data.frame(fread(stable_mat_binary_file))
+unstable_mat_binary = as.data.frame(fread(unstable_mat_binary_file))
+pk_mat_binary = rbind(stable_mat_binary, unstable_mat_binary)
+pk_mat_binary = pk_mat_binary[order(pk_mat_binary[,4]),]
 ### na is all 0s
 
 ### get signal mat
@@ -40,14 +51,6 @@ used_row = (grepl("ctcf", chipseq_sig_mat[,4]))
 chipseq_sig_mat_ctcf = chipseq_sig_mat[used_row,]
 d1_0_OD0 = chipseq_sig_mat[order(chipseq_sig_mat_ctcf[,4]),]
 tp_plot = c(0,0.5, 4,4.5, 6,6.5, 12,12.5, 18,18.5, 24,24.5)
-
-### get decay curve
-get_decay_curve_pre = function(y,x){
-a = lm(y~x)
-print(summary(a))
-print(summary(a$coefficients))
-return(c(a$coefficients[1], a$coefficients[2], mean(a$residuals)))
-}
 
 get_decay_curve = function(y,x){
 A = (y[1]+y[2])/2
@@ -58,22 +61,7 @@ a = lm(y_sub~x-1)
 return(c(A, a$coefficients[1], summary(a)$r.squared))
 }
 
-get_linear_curve = function(y,x){
-a = lm(y~x)
-#print(summary(a))
-#print(summary(a$coefficients))
-return(summary(a)$r.squared)
-}
 
-
-def LS_ED = function(RC, t, A0, SR0, RC0, converge){
-
-RC = d1_0_OD_sig[6,]
-dat = as.data.frame(cbind(as.numeric(t), as.numeric(RC)+1, as.numeric(rep(RC[1]/2+RC[2]/2, length(t)))+1 ))
-colnames(dat) = c('t', 'RC', 'RC0')
-result = optim(par = c(-1, 0.1), fn = EDR, data = dat, method='BFGS')
-
-}
 
 ### get decay curve coefficients
 d1_0_OD_sig = d1_0_OD0[,-c(1:4)]
@@ -82,7 +70,6 @@ d1_0_OD_sig_decay0 = t(apply(as.matrix((d1_0_OD_sig)), 1, function(x) get_decay_
 d1_0_OD_sig_decay = d1_0_OD_sig_decay0[,1:2]
 d1_0_OD_sig_decay_residual = d1_0_OD_sig_decay0[,3]
 
-d1_0_OD_sig_linear_residual = t(apply(as.matrix((d1_0_OD_sig)), 1, function(x) get_linear_curve(x, tp)))
 
 ### get mean vs var
 seq_mean_var = seq(0,max(d1_0_OD_sig_decay[,1]), length.out=1000)
@@ -141,27 +128,6 @@ colnames(d1_0_OD_sig_decay_df) = c('A', 'B')
 loessMod10 <- loess(B ~ A, data=d1_0_OD_sig_decay_df, span=span_win)
 smoothed10 <- predict(loessMod10) 
 
-pdf(paste(new_folder, 'A_vs_B.ci.pdf', sep=''), width=5, height=5)
-heatscatter(d1_0_OD_sig_decay[,1],d1_0_OD_sig_decay[,2], xlab='0A mean signal (log)', ylab='-DR standard deviation')
-d1_0_OD_sig_decay_df_A = d1_0_OD_sig_decay_df$A
-bg_sd = lmmodel2$coefficients[1] + lmmodel2$coefficients[2] * d1_0_OD_sig_decay_df_A
-d1_0_OD_sig_decay_df_A_order = order(d1_0_OD_sig_decay_df_A)
-lines(smoothed10[d1_0_OD_sig_decay_df_A_order], x=d1_0_OD_sig_decay_df_A[d1_0_OD_sig_decay_df_A_order], col="black")
-lines(smoothed10[d1_0_OD_sig_decay_df_A_order]+z*bg_sd[d1_0_OD_sig_decay_df_A_order], x=d1_0_OD_sig_decay_df_A[d1_0_OD_sig_decay_df_A_order], col="cyan2")
-lines(smoothed10[d1_0_OD_sig_decay_df_A_order]-z*bg_sd[d1_0_OD_sig_decay_df_A_order], x=d1_0_OD_sig_decay_df_A[d1_0_OD_sig_decay_df_A_order], col="cyan2")
-dev.off()
-
-
-pdf(paste(new_folder, 'A_vs_B.ci.residual.hist.pdf', sep=''), width=5, height=5)
-hist(d1_0_OD_sig_decay_residual, breaks=50)
-dev.off()
-pdf(paste(new_folder, 'A_vs_B.linear.residual.hist.pdf', sep=''), width=5, height=5)
-hist(d1_0_OD_sig_linear_residual, breaks=50)
-dev.off()
-
-
-
-
 
 ### iterative change loess
 d1_0_OD_sig_decay_df_iter = d1_0_OD_sig_decay_df
@@ -190,7 +156,8 @@ for (i in 1:100){
 }
 
 ### binarize CTCF by iterative loess curve
-z_new = qnorm(1-pnew)
+p = 0.01
+z_new = qnorm(1-p)
 d1_0_OD_sig_decay_df_A_all = d1_0_OD_sig_decay_df$A
 bg_sd_all = lmmodel2$coefficients[1] + lmmodel2$coefficients[2] * d1_0_OD_sig_decay_df_A_all
 ### binarize it 
@@ -198,32 +165,31 @@ smoothed10_alldata = predict(loessMod10_iter, newdata = d1_0_OD_sig_decay_df)
 upperlims = smoothed10_alldata+z_new*bg_sd_all
 stable_peak_binary = d1_0_OD_sig_decay_df$B > upperlims
 
-### write stable peaks
-d1_0_OD0_stable_peak = d1_0_OD0[stable_peak_binary,]
-write.table(d1_0_OD0_stable_peak, paste(new_folder, output_name, sep=''), quote=F, col.names=T, row.names=F, sep='\t')
-d1_0_OD0_unstable_peak = d1_0_OD0[!stable_peak_binary,]
-write.table(d1_0_OD0_unstable_peak, paste(new_folder, output_name, '.unstable.txt', sep=''), quote=F, col.names=T, row.names=F, sep='\t')
+color_list = c("#A0A0A0", "#606060", "#99CCFF", "#66FF66", "#FF8C00", "#FF4500")
 
-pdf(paste(new_folder, 'A_vs_B.ci.iter.pdf', sep=''), width=5, height=5)
-heatscatter(d1_0_OD_sig_decay[,1],d1_0_OD_sig_decay[,2], xlab='0A mean signal (log)', ylab='-DR standard deviation')
+font_size = 2
+pdf(paste(new_folder, 'A_vs_B.ci.iter.intersect.pdf', sep=''), width=15, height=15)
+plot(d1_0_OD_sig_decay[,1],d1_0_OD_sig_decay[,2], xlab='0A mean signal (log)', ylab='-DR standard deviation',cex.lab=font_size, cex.axis=font_size, cex.main=font_size, cex.sub=font_size)
+for (i in c(1:6)){
+used_id = pk_mat_binary[,i+4]!=0
+points(d1_0_OD_sig_decay[used_id,1],d1_0_OD_sig_decay[used_id,2], col=color_list[i],pch=16)
+}
+dev.off()
+
+pdf(paste(new_folder, 'A_vs_B.ci.iter.pdf', sep=''), width=15, height=15)
+heatscatter(d1_0_OD_sig_decay[,1],d1_0_OD_sig_decay[,2], xlab='0A mean signal (log)', ylab='-DR standard deviation',cex.lab=font_size, cex.axis=font_size, cex.main=font_size, cex.sub=font_size)
 d1_0_OD_sig_decay_df_A = d1_0_OD_sig_decay_df_iter$A
 bg_sd = lmmodel2$coefficients[1] + lmmodel2$coefficients[2] * d1_0_OD_sig_decay_df_A
 d1_0_OD_sig_decay_df_A_order = order(d1_0_OD_sig_decay_df_A)
-lines(smoothed10_iter[d1_0_OD_sig_decay_df_A_order], x=d1_0_OD_sig_decay_df_A[d1_0_OD_sig_decay_df_A_order], col="black")
-lines(smoothed10_iter[d1_0_OD_sig_decay_df_A_order]+z_new*bg_sd[d1_0_OD_sig_decay_df_A_order], x=d1_0_OD_sig_decay_df_A[d1_0_OD_sig_decay_df_A_order], col="cyan2")
-lines(smoothed10_iter[d1_0_OD_sig_decay_df_A_order]-z_new*bg_sd[d1_0_OD_sig_decay_df_A_order], x=d1_0_OD_sig_decay_df_A[d1_0_OD_sig_decay_df_A_order], col="cyan2")
+lines(smoothed10_iter[d1_0_OD_sig_decay_df_A_order], x=d1_0_OD_sig_decay_df_A[d1_0_OD_sig_decay_df_A_order], col="black", lwd=3)
+lines(smoothed10_iter[d1_0_OD_sig_decay_df_A_order]+z_new*bg_sd[d1_0_OD_sig_decay_df_A_order], x=d1_0_OD_sig_decay_df_A[d1_0_OD_sig_decay_df_A_order], col="cyan2", lwd=3)
+lines(smoothed10_iter[d1_0_OD_sig_decay_df_A_order]-z_new*bg_sd[d1_0_OD_sig_decay_df_A_order], x=d1_0_OD_sig_decay_df_A[d1_0_OD_sig_decay_df_A_order], col="cyan2", lwd=3)
 dev.off()
 
 rbPal <- colorRampPalette(c('black','red'))
 Col_all <- rbPal(101)[as.numeric(cut(d1_0_OD_sig_decay_residual,breaks = 100))]
-pdf(paste(new_folder, 'A_vs_B.ci.iter.r2.pdf', sep=''), width=5, height=5)
-plot(d1_0_OD_sig_decay[,1],d1_0_OD_sig_decay[,2], xlab='0A mean signal (log)', ylab='-DR standard deviation', col=Col_all, pch=20)
-d1_0_OD_sig_decay_df_A = d1_0_OD_sig_decay_df_iter$A
-bg_sd = lmmodel2$coefficients[1] + lmmodel2$coefficients[2] * d1_0_OD_sig_decay_df_A
-d1_0_OD_sig_decay_df_A_order = order(d1_0_OD_sig_decay_df_A)
-lines(smoothed10_iter[d1_0_OD_sig_decay_df_A_order], x=d1_0_OD_sig_decay_df_A[d1_0_OD_sig_decay_df_A_order], col="black")
-lines(smoothed10_iter[d1_0_OD_sig_decay_df_A_order]+z_new*bg_sd[d1_0_OD_sig_decay_df_A_order], x=d1_0_OD_sig_decay_df_A[d1_0_OD_sig_decay_df_A_order], col="cyan2")
-lines(smoothed10_iter[d1_0_OD_sig_decay_df_A_order]-z_new*bg_sd[d1_0_OD_sig_decay_df_A_order], x=d1_0_OD_sig_decay_df_A[d1_0_OD_sig_decay_df_A_order], col="cyan2")
+pdf(paste(new_folder, 'A_vs_B.ci.iter.r2.pdf', sep=''), width=15, height=15)
+plot(d1_0_OD_sig_decay[,1],d1_0_OD_sig_decay[,2], xlab='0A mean signal (log)', ylab='-DR standard deviation', col=Col_all, pch=20, cex.lab=font_size, cex.axis=font_size, cex.main=font_size, cex.sub=font_size)
 dev.off()
 
 
