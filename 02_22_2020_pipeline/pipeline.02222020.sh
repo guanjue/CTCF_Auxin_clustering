@@ -14,7 +14,6 @@ time bash get_signal_mat.sh
 
 ### step4 get bg substracted signal matrix
 time Rscript get_bg_subtracted_sigmat.R ctcf.qPCR.randbg.blackrm.idsort.sigmat.txt ctcf.qPCR.randbg.blackrm.idsort.0kb.sigmat.txt ctcf.qPCR.randbg.blackrm.idsort.sigmat.bgsub.txt
-#time Rscript get_bg_subtracted_sigmat.macs.R ctcf.qPCR.randbg.blackrm.idsort.sigmat.txt ctcf.qPCR.randbg.blackrm.idsort.1kb.sigmat.txt ctcf.qPCR.randbg.blackrm.idsort.5kb.sigmat.txt ctcf.qPCR.randbg.blackrm.idsort.10kb.sigmat.txt ctcf.qPCR.randbg.blackrm.idsort.sigmat.bgsub.txt
 
 ### step5 normalize to qPCR
 time Rscript qPCR_LMnorm.R ctcf.qPCR.randbg.blackrm.idsort.sigmat.bgsub.txt bam_bw_bedgraph/file_list.all.timepoints.txt 20180910_CTCF_ChIPqPCR_7pts.rmNA.qPCR.sig.txt 20180910_CTCF_ChIPqPCR_7pts.rmNA.qPCR.timepoints.txt ctcf.qPCR.randbg.blackrm.idsort.sigmat.bgsub.LMqPCRnorm.txt
@@ -26,24 +25,22 @@ time bash get_bw_norm.sh
 time Rscript get_replicates_R2.R
 
 ### step7 get Ward Statistics
-time Rscript /Users/universe/Documents/2020_BG/ctcf_auxin/02_22_2020_pipeline/get_Wardstat.R ctcf.qPCR.randbg.blackrm.idsort.sigmat.bgsub.txt ctcf.qPCR.randbg.blackrm.idsort.sigmat.bgsub.Ward.txt
-time Rscript /Users/universe/Documents/2020_BG/ctcf_auxin/02_22_2020_pipeline/get_Wardstat.R ctcf.qPCR.randbg.blackrm.idsort.sigmat.bgsub.LMqPCRnorm.txt ctcf.qPCR.randbg.blackrm.idsort.sigmat.bgsub.LMqPCRnorm.Ward.txt
+time Rscript get_Wardstat.R ctcf.qPCR.randbg.blackrm.idsort.sigmat.bgsub.txt ctcf.qPCR.randbg.blackrm.idsort.sigmat.bgsub.Ward.txt
+time Rscript get_Wardstat.R ctcf.qPCR.randbg.blackrm.idsort.sigmat.bgsub.LMqPCRnorm.txt ctcf.qPCR.randbg.blackrm.idsort.sigmat.bgsub.LMqPCRnorm.Ward.txt
 
 ### step8 clustering
 mkdir all_pk
 mkdir all_pk/LMqPCRnorm_decay_folder
+# ED model
 time Rscript get_cluster_Decay_curve.R
-
-### Step9 get same 0A peak sets (stable vs unstable)
-time Rscript get_0A_same_sus.pk.R
-
-### Step10 FIMO
-time bash get_fimo_analysis.sh
-
-### Step11 Mclust for validation
+# Mclust
 time Rscript get_cluster_Mclust.R
 
-### Step12 plot exponential signal trend matching initial signal
+### Step9 FIMO
+time bash get_fimo_analysis.ED.sh
+time bash get_fimo_analysis.Mclust.sh
+
+### Step10 Intensity matching
 time Rscript intensity_matching_JL_final.R
 time Rscript intensity_matching_decay_JL_final.R
 
